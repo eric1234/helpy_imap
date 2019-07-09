@@ -1,6 +1,6 @@
 namespace :helpy do
   desc "Run mailman, call with mail_interval=0 to run once"
-  task :mailman => :environment do
+  task :mailman => %i[environment mail_config] do
 
     interval = ENV['mail_interval'].to_i || 60
     require 'mailman'
@@ -17,6 +17,23 @@ namespace :helpy do
         end
       end
     end
+  end
+
+  task :mail_config do
+    ActionMailer::Base.smtp_settings = {
+      :address              => AppSettings["email.mail_smtp"],
+      :port                 => AppSettings["email.mail_port"],
+      :user_name            => AppSettings["email.smtp_mail_username"].presence,
+      :password             => AppSettings["email.smtp_mail_password"].presence,
+      :domain               => AppSettings["email.mail_domain"],
+      :enable_starttls_auto => !AppSettings["email.mail_smtp"].in?(["localhost", "127.0.0.1", "::1"])
+    }
+
+    ActionMailer::Base.perform_deliveries = to_boolean(AppSettings['email.send_email'])
+  end
+
+  def to_boolean(str)
+    str == 'true'
   end
 
   def configure_mailman
